@@ -32,8 +32,9 @@ cost = tf.reduce_mean(tf.square(hypothesis - Y), name='MSE')
 optimizer = tf.train.GradientDescentOptimizer(0.01).minimize(cost)
 
 init = tf.global_variables_initializer()
-epochs = 500
+epochs = 100
 history = []
+test_history = []
 
 with tf.Session() as sess:
     # Initializing all variables
@@ -42,6 +43,9 @@ with tf.Session() as sess:
     for epoch in range(epochs):
         dummy, c = sess.run([optimizer, cost], feed_dict={X: X_train, Y: Y_train})
         history.append(c)
+        #For plotting costVsIterations for testing
+        ctest = sess.run(cost, feed_dict={X: X_test, Y: Y_test})
+        test_history.append(ctest)
 
     # Making predictions on the training and testing sets    
     train_predictions = sess.run(hypothesis, feed_dict={X: X_train, Y: Y_train})
@@ -57,7 +61,9 @@ print(train_predictions[:5])
 
 print("Final cost:", history[-1])
 
-plt.plot(history)
+plt.plot(history,label="training")
+plt.plot(test_history,label="testing")
+plt.legend(loc='upper right')
 plt.xlabel("Iterations")
 plt.ylabel("Cost")
 plt.show()
