@@ -7,10 +7,35 @@ from sklearn.model_selection import train_test_split
 dataset = np.loadtxt("data.txt", delimiter=',')
 print(dataset.shape)
 
+# Visualizing the data
+plt.scatter(dataset[:, 0], dataset[:, -1])
+plt.title("Data points")
+plt.xlabel("Size")
+plt.ylabel("Price")
+plt.show()
+
 # Splitting it into training and testing sets
 X_train, X_test, Y_train, Y_test = train_test_split(dataset[:, :-1], dataset[:, -1], test_size=0.3, random_state=1)
 Y_train = Y_train.reshape(Y_train.shape[0], 1)
 Y_test = Y_test.reshape(Y_test.shape[0], 1)
+
+# Preprocessing the data.
+# Mean normalisation and feature scaling.
+def preprocess(X, mean=None, std=None):
+    m, n = X.shape
+    if mean is None and std is None:
+        mean = np.mean(X, axis=0)
+        std = np.std(X, axis=0)
+
+        X = (X - mean) / std
+        return X, mean, std
+    else:
+        X = (X - mean) / std
+        return X
+
+X_train, mean, std = preprocess(X_train)
+X_test = preprocess(X_test, mean, std)
+
 # Some useful values
 m, n = X_train.shape
 print("Number of training examples:", m)
@@ -32,7 +57,7 @@ cost = tf.reduce_mean(tf.square(hypothesis - Y), name='MSE')
 optimizer = tf.train.GradientDescentOptimizer(0.01).minimize(cost)
 
 init = tf.global_variables_initializer()
-epochs = 100
+epochs = 500
 history = []
 test_history = []
 
@@ -52,9 +77,9 @@ with tf.Session() as sess:
     test_predictions = sess.run(hypothesis, feed_dict={X: X_test, Y: Y_test})
 
     # Saving the model to disk
-    tf.saved_model.simple_save(sess, 'lin-model-dir', 
-        inputs={"X": X},
-        outputs={"hypothesis": hypothesis})
+    # tf.saved_model.simple_save(sess, 'lin-model-dir', 
+    #     inputs={"X": X},
+    #     outputs={"hypothesis": hypothesis})
 
 print("First 5 predictions on the training set.")
 print(train_predictions[:5])
@@ -66,25 +91,27 @@ plt.plot(test_history,label="testing")
 plt.legend(loc='upper right')
 plt.xlabel("Iterations")
 plt.ylabel("Cost")
+plt.title("Cost over Iterations")
 plt.show()
 
 # Plotting the predictions
 min_max = [[X_train.min()], [X_train.max()]]
 min_max_pred = train_predictions[[np.argmin(X_train), np.argmax(X_train)]]
 plt.plot(min_max, min_max_pred)
-plt.scatter(X_train[:, 0], Y_train, color="red")
-plt.scatter(X_test[:, 0], Y_test, color="green")
+plt.scatter(X_train[:, 0], Y_train, label='Training set')
+plt.scatter(X_test[:, 0], Y_test, marker='*', label='Testing set')
 plt.xlabel("Size")
 plt.ylabel("Price")
 plt.title("Predictions")
+plt.legend()
 plt.show()
 
 # Loading the saved model
-print("\nAfter reloading the model:")
-with tf.Session(graph=tf.Graph()) as sess:
-    tf.saved_model.loader.load(sess, ['serve'], 'lin-model-dir')
-    graph = tf.get_default_graph()
-    train_predictions = sess.run('hypothesis:0', feed_dict={'X:0': X_train})
+# print("\nAfter reloading the model:")
+# with tf.Session(graph=tf.Graph()) as sess:
+#     tf.saved_model.loader.load(sess, ['serve'], 'lin-model-dir')
+#     graph = tf.get_default_graph()
+#     train_predictions = sess.run('hypothesis:0', feed_dict={'X:0': X_train})
 
-print("First 5 predictions on the training set.")
-print(train_predictions[:5])
+# print("First 5 predictions on the training set.")
+# print(train_predictions[:5])
